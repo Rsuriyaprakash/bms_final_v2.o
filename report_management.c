@@ -1,0 +1,15 @@
+/** @file report_management.c @brief Report generation implementation. */
+#include "report_management.h"
+#include "logging.h"
+#include "utility.h"
+#include <stdio.h>
+#include <string.h>
+BmsStatus_t ReportManagementBuildSummary(const BmsDonorContext_t*d,const BmsHospitalContext_t*h,const BmsInventoryContext_t*i,const BmsBloodRequestContext_t*r,const BmsDonationContext_t*n,const BmsEmergencyAlertContext_t*a,BmsSummaryReport_t*s){BmsLinkedListNode_t*x;if((d==NULL)||(h==NULL)||(i==NULL)||(r==NULL)||(n==NULL)||(a==NULL)||(s==NULL))return BMS_STATUS_INVALID_ARGUMENT;(void)memset(s,0,sizeof(*s));s->totalDonors=d->donors.count;s->totalHospitals=h->hospitals.count;s->totalDonations=n->donations.count;for(x=d->donors.head;x;x=x->next)if(((BmsDonor_t*)x->data)->isEligible)++s->eligibleDonors;for(x=i->inventory.head;x;x=x->next)s->totalInventoryUnits+=((BmsBloodInventory_t*)x->data)->units;for(x=r->requests.head;x;x=x->next){BmsRequestStatus_t st=((BmsBloodRequest_t*)x->data)->status;if(st==BMS_REQUEST_STATUS_PENDING)++s->pendingRequests;if(st==BMS_REQUEST_STATUS_FULFILLED)++s->fulfilledRequests;}for(x=a->alertHistory.head;x;x=x->next)if(!((BmsEmergencyAlert_t*)x->data)->resolved)++s->unresolvedAlerts;return BMS_STATUS_OK;}
+static BmsStatus_t WriteSimple(const char*p,const char*title,uint32_t count){FILE*f;if((p==NULL)||(title==NULL))return BMS_STATUS_INVALID_ARGUMENT;f=fopen(p,"w");if(f==NULL)return BMS_STATUS_FILE_ERROR;(void)fprintf(f,"%s\nTotal records: %u\n",title,count);return(fclose(f)==0)?BMS_STATUS_OK:BMS_STATUS_FILE_ERROR;}
+BmsStatus_t ReportManagementGenerateInventoryReport(const BmsInventoryContext_t*c,const char*p){return(c==NULL)?BMS_STATUS_INVALID_ARGUMENT:WriteSimple(p,"Inventory Report",c->inventory.count);}
+BmsStatus_t ReportManagementGenerateDonorReport(const BmsDonorContext_t*c,const char*p){return(c==NULL)?BMS_STATUS_INVALID_ARGUMENT:WriteSimple(p,"Donor Report",c->donors.count);}
+BmsStatus_t ReportManagementGenerateHospitalReport(const BmsHospitalContext_t*c,const char*p){return(c==NULL)?BMS_STATUS_INVALID_ARGUMENT:WriteSimple(p,"Hospital Report",c->hospitals.count);}
+BmsStatus_t ReportManagementGenerateBloodRequestReport(const BmsBloodRequestContext_t*c,const char*p){return(c==NULL)?BMS_STATUS_INVALID_ARGUMENT:WriteSimple(p,"Blood Request Report",c->requests.count);}
+BmsStatus_t ReportManagementGenerateDonationReport(const BmsDonationContext_t*c,const char*p){return(c==NULL)?BMS_STATUS_INVALID_ARGUMENT:WriteSimple(p,"Donation Report",c->donations.count);}
+BmsStatus_t ReportManagementGenerateEmergencyAlertReport(const BmsEmergencyAlertContext_t*c,const char*p){return(c==NULL)?BMS_STATUS_INVALID_ARGUMENT:WriteSimple(p,"Emergency Alert Report",c->alertHistory.count);}
+BmsStatus_t ReportManagementPrintSummary(const BmsSummaryReport_t*s){if(s==NULL)return BMS_STATUS_INVALID_ARGUMENT;(void)printf("Donors: %u (%u eligible)\nHospitals: %u\nInventory units: %u\nPending/Fulfilled requests: %u/%u\nDonations: %u\nUnresolved alerts: %u\n",s->totalDonors,s->eligibleDonors,s->totalHospitals,s->totalInventoryUnits,s->pendingRequests,s->fulfilledRequests,s->totalDonations,s->unresolvedAlerts);return BMS_STATUS_OK;}

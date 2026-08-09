@@ -1,0 +1,5 @@
+#include "test_common.h"
+#include "hash_table.h"
+static void test_numeric(void){BmsHashTable_t t;int v=42;void *out=NULL;ASSERT_OK(HashTableInitialize(&t,7U,sizeof(int),BMS_HASH_KEY_UINT32));ASSERT_OK(HashTableInsertUint32(&t,10U,&v));ASSERT_STATUS(BMS_STATUS_ALREADY_EXISTS,HashTableInsertUint32(&t,10U,&v));ASSERT_OK(HashTableSearchUint32(&t,10U,&out));CU_ASSERT_EQUAL(*(int*)out,42);CU_ASSERT_EQUAL(HashTableGetCount(&t),1U);ASSERT_OK(HashTableDeleteUint32(&t,10U));ASSERT_STATUS(BMS_STATUS_NOT_FOUND,HashTableSearchUint32(&t,10U,&out));HashTableDeinitialize(&t);}
+static void test_string(void){BmsHashTable_t t;int v=7;void *out=NULL;ASSERT_OK(HashTableInitialize(&t,7U,sizeof(int),BMS_HASH_KEY_STRING));ASSERT_OK(HashTableInsertString(&t,"donor",&v));ASSERT_OK(HashTableSearchString(&t,"donor",&out));CU_ASSERT_EQUAL(*(int*)out,7);ASSERT_OK(HashTableDeleteString(&t,"donor"));HashTableDeinitialize(&t);}
+void RegisterHashTableTests(void){CU_pSuite s=CU_add_suite("Hash Table",NULL,NULL);CU_add_test(s,"numeric key",test_numeric);CU_add_test(s,"string key",test_string);}

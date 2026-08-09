@@ -1,0 +1,6 @@
+#include "test_common.h"
+#include "graph_management.h"
+static BmsHospital_t h(uint32_t id){BmsHospital_t x;memset(&x,0,sizeof x);x.hospitalId=id;snprintf(x.name,sizeof x,"H%u",id);x.isActive=true;return x;}
+static BmsStatus_t visit(const BmsHospital_t *hospital,void *context){CU_ASSERT_PTR_NOT_NULL(hospital);(*(uint32_t*)context)++;return BMS_STATUS_OK;}
+static void test_routes_traversal(void){BmsHospitalGraph_t g;BmsHospital_t a=h(1),b=h(2),c=h(3);BmsHospitalId_t nearId=0;uint32_t km=0,count=0;ASSERT_OK(GraphInitialize(&g));ASSERT_OK(GraphAddHospital(&g,&a));ASSERT_OK(GraphAddHospital(&g,&b));ASSERT_OK(GraphAddHospital(&g,&c));ASSERT_OK(GraphAddRoute(&g,1,2,10));ASSERT_OK(GraphAddRoute(&g,1,3,5));ASSERT_OK(GraphGetRouteDistance(&g,1,3,&km));CU_ASSERT_EQUAL(km,5U);ASSERT_OK(GraphFindNearestHospital(&g,1,&nearId,&km));CU_ASSERT_EQUAL(nearId,3U);ASSERT_OK(GraphBreadthFirstSearch(&g,1,visit,&count));CU_ASSERT_EQUAL(count,3U);count=0;ASSERT_OK(GraphDepthFirstSearch(&g,1,visit,&count));CU_ASSERT_EQUAL(count,3U);ASSERT_OK(GraphRemoveRoute(&g,1,2));ASSERT_OK(GraphRemoveHospital(&g,2));GraphClear(&g);}
+void RegisterGraphTests(void){CU_pSuite s=CU_add_suite("Graph",NULL,NULL);CU_add_test(s,"routes BFS DFS nearest",test_routes_traversal);}
